@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Code Snippet Generate Utility</title>
+    <meta name="description" content="A simple code snippet generate utility based on given inputs and template. Intended to be a single html file (without any dependencies) and no
+      content leaves the browser out to network.">
+    <meta name="author" content="entegrations.io INC.">
+    <meta name="keywords"
+          content="A quick code snippet generating template utility" />
+  </head>
+  <body>
+    <h2>
+      A simple code snippet generate utility based on given inputs and template.
+    </h2>
+    <h5>
+      Intended to be a single html file (without any dependencies) and no
+      content leaves the browser out to network.
+    </h5>
+    <div></div>
+    <table>
+      <tr>
+        <td>
+          <strong>Input:</strong> (One or more lines of input, for e.g. userId text.)<br /><textarea
+            id="input"
+            rows="6"
+            cols="100"
+          >
+abcDefGhi</textarea>
+          <br />
+          <br />
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <strong>Output spec:</strong><br />
+          <!--strong>DO</strong> for each input line:
+          <input
+            type="radio"
+            id="forEachInputLineDo"
+            value="forEachInputLineDo"
+            name="macro"
+            checked="true"
+          />
+          once for input:
+          <input
+            type="radio"
+            id="onceForInputDo"
+            value="onceForInputDo"
+            name="macro" disabled
+          /><br /-->
+          <table>
+            <tr>
+              <td>Extract 0:
+                <input id="extract0" value="" style="width: 250px" /> use as $0
+              </td>
+              <td>Extract 1:
+                <input id="extract1" value="upper" style="width: 250px" /> use
+                as $1
+              </td>
+            </tr>
+            <tr>
+              <td>Extract 2:
+                <input id="extract2" value="" style="width: 250px" /> use as $2
+              </td>
+              <td>Extract 3:
+                <input id="extract3" value="" style="width: 250px" /> use as $3
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                Tip on extracts: Space separated. Available functions are upper,
+                lower, camel, snake, field0-field4. Use $* for accessing input line. Executed LTR to produce a value into 'emit'
+                variable(s).<br /><br />
+              </td>
+            </tr>
+          </table>
+          <table>
+            <tr>
+              <td>Emit 0</td>
+              <td>
+                <input
+                  id="emit0"
+                  value='String DATA_$1 = "$0";'
+                  style="width: 500px"
+                />
+                for e.g. private String $1 = "$0";
+              </td>
+            </tr>
+            <tr style="display:">
+              <td>Emit 1</td>
+              <td>
+                <input id="emit1" value="" style="width: 500px" /> for e.g.
+                public static String $1; //$0 is something special
+              </td>
+            </tr>
+            <tr style="display: none">
+              <td>Emit 2</td>
+              <td>
+                <input id="emit2" value="" style="width: 500px" /> for e.g.
+                private String $2;
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <br />
+          Group Emits For One Input Line Together In Output: <input type="radio"
+          id="groupEmitsForOneInputLineTogetherInOutputYes" value="yes"
+          name="outputSpec" checked=true">
+          <input
+            type="radio"
+            id="groupEmitsForOneInputLineTogetherInOutputNo"
+            name="outputSpec"
+            value="no"
+          /><br />
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <br />
+          <br />
+          <strong
+            ><input
+              type="button"
+              value="generate"
+              id="generate"
+              onclick="javascript:generate();"
+          />&nbsp;<input
+                type="button"
+                value="load sample 1"
+                id="loadSample1"
+                onclick="javascript:loadSample1();"
+        />&nbsp;<input
+                  type="button"
+                  value="load sample 2"
+                  id="loadSample2"
+                  onclick="javascript:loadSample2();"
+          />&nbsp;
+         <input type="button" value="reset" id="reset"
+                onclick="javascript:reset();"/>
+          </strong>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <br />
+          <strong>Generated output:</strong><br /><textarea
+            id="output"
+            rows="10"
+            cols="100"
+          ></textarea
+          ><br />
+        </td>
+      </tr>
+    </table>
+    <script>
+      function reset() {
+        var inputObjs = ['input', 'extract0', 'extract1', 'extract2', 'extract3', 'emit0', 'emit1', 'emit2', 'output'];
+        for(var idx=0; idx<inputObjs.length; idx++) {
+         document.getElementById(inputObjs[idx]).value = '';
+        }
+      }
+      function loadSample1() {
+        reset();
+        document.getElementById('input').value = 'user_id\nuser_name';
+        document.getElementById('extract0').value = 'lower';
+        document.getElementById('extract1').value = 'upper';
+        document.getElementById('extract2').value = 'snake';
+        document.getElementById('extract3').value = 'camel';
+        document.getElementById('emit0').value = 'this.$3 = $3; //$*';
+        document.getElementById('emit1').value = 'userObj[\'$3\'] = someObj.$2;';
+
+        generate();
+      }
+      function loadSample2() {
+        reset();
+        document.getElementById('input').value = 'user_id text\nuser_name text';
+        document.getElementById('extract0').value = 'field0 lower';
+        document.getElementById('extract1').value = 'field0 upper';
+        document.getElementById('extract2').value = 'field0 snake';
+        document.getElementById('extract3').value = 'field0 camel';
+        document.getElementById('emit0').value = 'String COLUMN_$1 = "$0"; //$*';
+        document.getElementById('emit1').value = 'final String $3;';
+
+        generate();
+      }
+
+      function generate() {
+        var input = document.getElementById('input').value;
+        const numExtracts = 4;
+        const numEmits = 2;
+
+        var extracts = [];
+        for(var idx=0; idx<numExtracts; idx++) {
+         extracts.push(document.getElementById('extract' + idx).value);
+        }
+        var emits = [];
+        for(var idx=0; idx<numEmits; idx++) {
+         emits.push(document.getElementById('emit' + idx).value);
+        }
+
+        var groupEmitsForOneInputLineTogetherInOutput = document.getElementById('groupEmitsForOneInputLineTogetherInOutputYes').checked;
+
+        var inputLines = input.split('\n');
+        var outputObj = document.getElementById('output');
+
+        var tmpOutputText = '';
+        var debugText = '';
+        var emitsWiseOutputText = [];
+        for (var inputLinesIdx = 0; inputLinesIdx < inputLines.length; inputLinesIdx++) {
+          if (inputLines[inputLinesIdx] == '') {
+            continue;
+          }
+
+          var tmpExtracts = [];
+          //extract0-extract3 are initialized into a temp with current input line
+          for(var idx=0; idx<numExtracts; idx++) {
+           tmpExtracts.push(inputLines[inputLinesIdx]);
+          }
+          for(var extractsIdx=0; extractsIdx<extracts.length; extractsIdx++){
+            if (tmpExtracts[extractsIdx] != '') {
+              var tmpExtractsArray = extracts[extractsIdx].split(' ');
+              //for each extract, process any functions
+              for (tmpExtractsArrayIdx = 0; tmpExtractsArrayIdx < tmpExtractsArray.length; tmpExtractsArrayIdx++) {
+                if (tmpExtractsArray[tmpExtractsArrayIdx] == 'upper') {
+                  tmpExtracts[extractsIdx] = tmpExtracts[extractsIdx].toUpperCase();
+                }
+                if (tmpExtractsArray[tmpExtractsArrayIdx] == 'lower') {
+                  tmpExtracts[extractsIdx] = tmpExtracts[extractsIdx].toLowerCase();
+                }
+                if (tmpExtractsArray[tmpExtractsArrayIdx] == 'camel') {
+                  tmpExtracts[extractsIdx] = camelCase(tmpExtracts[extractsIdx].replace(new RegExp('_', 'g'), ' '));
+                }
+                if (tmpExtractsArray[tmpExtractsArrayIdx] == 'snake') {
+                  tmpExtracts[extractsIdx] = snakeCase(tmpExtracts[extractsIdx]);
+                }
+                for(var fieldsLen=0; fieldsLen<5; fieldsLen++){
+                  if (tmpExtractsArray[tmpExtractsArrayIdx] == 'field' + fieldsLen) {
+                    tmpExtracts[extractsIdx] = field(tmpExtracts[extractsIdx], fieldsLen);
+                  }
+                }
+              }
+            }
+          }
+          //tmpExtracts[0] contains value that can be used as $0 and so on.
+          if (groupEmitsForOneInputLineTogetherInOutput == true) {
+            for(var emitsIdx=0; emitsIdx<emits.length; emitsIdx++){
+              var oneEmitTmpText = emits[emitsIdx];
+              if (!isBlank(oneEmitTmpText)) {
+                for(var extractsIdx=0; extractsIdx<extracts.length; extractsIdx++){
+                  oneEmitTmpText = oneEmitTmpText.replace(new RegExp('[$]' + extractsIdx, 'g'), tmpExtracts[extractsIdx]);
+                }
+                oneEmitTmpText = oneEmitTmpText.replace(new RegExp('[$]\\*', 'g'), inputLines[inputLinesIdx]);
+                tmpOutputText += oneEmitTmpText + '\n';
+              }
+            }
+            tmpOutputText += '\n';
+          } else {
+            for(var emitsIdx=0; emitsIdx<emits.length; emitsIdx++){
+              var oneEmitTmpText = emits[emitsIdx];
+              if (!isBlank(oneEmitTmpText)) {
+                for(var extractsIdx=0; extractsIdx<extracts.length; extractsIdx++) {
+                  oneEmitTmpText = oneEmitTmpText.replace(new RegExp('[$]' + extractsIdx, 'g'), tmpExtracts[extractsIdx]);
+                }
+                oneEmitTmpText = oneEmitTmpText.replace(new RegExp('[$]\\*', 'g'), inputLines[inputLinesIdx]);
+                if (!emitsWiseOutputText[emitsIdx]) {
+                  emitsWiseOutputText[emitsIdx] = [];
+                }
+                emitsWiseOutputText[emitsIdx].push(oneEmitTmpText + '\n');
+              }
+            }
+          }
+        }
+        var outputText = '';
+        if (!isBlank(debugText)) {
+          outputText = debugText + '\n';
+        }
+        if (groupEmitsForOneInputLineTogetherInOutput == true) {
+           outputText += tmpOutputText;
+        } else {
+          for(var emitsIdx=0; emitsIdx<emits.length; emitsIdx++) {
+            outputText += emitsWiseOutputText[emitsIdx].join('') + '\n';
+          }
+        }
+        outputObj.value = outputText;
+      }
+      function camelCase(inputStr) {
+        return inputStr.replace(/(?:^\w|[A-Z]|\b\w)/g, function (oneWord, idx) {
+                        return idx === 0 ? oneWord.toLowerCase() : oneWord.toUpperCase();
+                      })
+                      .replace(/\s+/g, '');
+      }
+      function snakeCase(inputStr) {
+        return inputStr
+          .match(
+            /[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g
+          )
+          .map((m) => m.toLowerCase())
+          .join('_');
+      }
+      function field(inputStr, num) {
+        var splitArray = inputStr.split(/[ ,]+/);
+        if (splitArray.length >= num + 1){
+          return splitArray[num];
+        } else {
+          return inputStr;
+        }
+      }
+      function isBlank(inputStr) {
+        return (!inputStr || /^\s*$/.test(inputStr));
+      }
+    </script>
+  </body>
+  <footer><br/>By <a href="entegrations.io">entegrations.io INC.</a>, licensed under MIT.</footer>
+</html>
